@@ -1,0 +1,2667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Target Server · Predictor</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js">
+    </script>
+    <style>
+        /* ─── RESET & BASE ─── */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+        body {
+            background: #06040c;
+            color: #f5f3ff;
+            overflow-x: hidden;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            background-image:
+                radial-gradient(ellipse at 20% 10%, rgba(124, 77, 255, 0.06) 0%, transparent 55%),
+                radial-gradient(ellipse at 80% 30%, rgba(0, 230, 118, 0.04) 0%, transparent 55%),
+                radial-gradient(ellipse at 50% 60%, rgba(124, 77, 255, 0.03) 0%, transparent 60%);
+        }
+        :root {
+            --bg-deep: #06040c;
+            --bg-card: #0d0a1a;
+            --bg-card-alt: #100c20;
+            --border-subtle: #1f1735;
+            --border-glow: #2a1f45;
+            --primary-purple: #7c4dff;
+            --primary-purple-light: #a78bfa;
+            --glow-green: #00e676;
+            --glow-red: #ff1744;
+            --glow-yellow: #ffc107;
+            --glow-blue: #4d7cff;
+            --glow-orange: #ff9100;
+            --text-white: #f5f3ff;
+            --text-dim: #8b7eaa;
+            --text-muted: #5c4f7a;
+            --radius-sm: 10px;
+            --radius-std: 16px;
+            --radius-lg: 22px;
+            --radius-xl: 28px;
+            --transition-smooth: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --shadow-card: 0 2px 24px rgba(0, 0, 0, 0.4);
+            --font-mono: 'SF Mono', 'Cascadia Code', 'JetBrains Mono', monospace;
+        }
+        .watermark {
+            position: fixed;
+            bottom: 10px;
+            right: 14px;
+            color: #1f1735;
+            font-size: 10px;
+            z-index: 99999;
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            user-select: none;
+            opacity: 0.7;
+        }
+        @keyframes pulse-glow {
+            0%,
+            100% {
+                opacity: 0.55;
+            }
+            50% {
+                opacity: 1;
+            }
+        }
+        @keyframes loader-progress {
+            0% {
+                width: 0%;
+            }
+            100% {
+                width: 100%;
+            }
+        }
+        @keyframes fade-up {
+            from {
+                opacity: 0;
+                transform: translateY(14px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        @keyframes scale-in {
+            from {
+                opacity: 0;
+                transform: scale(0.92);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        @keyframes ring-rotate {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+        @keyframes breathe {
+            0%,
+            100% {
+                box-shadow: 0 0 20px rgba(0, 230, 118, 0.06);
+            }
+            50% {
+                box-shadow: 0 0 40px rgba(0, 230, 118, 0.18);
+            }
+        }
+        @keyframes border-pulse {
+            0%,
+            100% {
+                border-color: rgba(255, 193, 7, 0.3);
+            }
+            50% {
+                border-color: rgba(255, 193, 7, 0.7);
+            }
+        }
+        @keyframes flash-green {
+            0%,
+            100% {
+                box-shadow: 0 0 20px rgba(0, 230, 118, 0.06);
+            }
+            50% {
+                box-shadow: 0 0 60px rgba(0, 230, 118, 0.5);
+            }
+        }
+        @keyframes flash-red {
+            0%,
+            100% {
+                box-shadow: 0 0 20px rgba(255, 23, 68, 0.06);
+            }
+            50% {
+                box-shadow: 0 0 60px rgba(255, 23, 68, 0.5);
+            }
+        }
+        @keyframes flash-yellow {
+            0%,
+            100% {
+                box-shadow: 0 0 20px rgba(255, 193, 7, 0.06);
+            }
+            50% {
+                box-shadow: 0 0 60px rgba(255, 193, 7, 0.5);
+            }
+        }
+        @keyframes flash-blue {
+            0%,
+            100% {
+                box-shadow: 0 0 20px rgba(77, 124, 255, 0.06);
+            }
+            50% {
+                box-shadow: 0 0 60px rgba(77, 124, 255, 0.5);
+            }
+        }
+        .animate-pulse {
+            animation: pulse-glow 2.4s infinite;
+        }
+        .animate-fade {
+            animation: fade-up 0.45s ease-out;
+        }
+        .animate-scale {
+            animation: scale-in 0.35s ease-out;
+        }
+        .animate-breathe {
+            animation: breathe 2.5s ease-in-out infinite;
+        }
+        .hidden {
+            display: none !important;
+        }
+        .text-glow-green {
+            color: var(--glow-green);
+            text-shadow: 0 0 24px rgba(0, 230, 118, 0.35);
+        }
+        .text-glow-red {
+            color: var(--glow-red);
+            text-shadow: 0 0 24px rgba(255, 23, 68, 0.35);
+        }
+        .text-glow-yellow {
+            color: var(--glow-yellow);
+            text-shadow: 0 0 24px rgba(255, 193, 7, 0.35);
+        }
+        .text-glow-blue {
+            color: var(--glow-blue);
+            text-shadow: 0 0 24px rgba(77, 124, 255, 0.35);
+        }
+        .text-glow-orange {
+            color: var(--glow-orange);
+            text-shadow: 0 0 24px rgba(255, 145, 0, 0.35);
+        }
+        .icon-svg {
+            width: 20px;
+            height: 20px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        .flash-win {
+            animation: flash-green 0.8s ease-in-out 2;
+        }
+        .flash-loss {
+            animation: flash-red 0.8s ease-in-out 2;
+        }
+        .flash-yellow {
+            animation: flash-yellow 0.8s ease-in-out 2;
+        }
+        .flash-blue {
+            animation: flash-blue 0.8s ease-in-out 2;
+        }
+
+        /* ─── CONTAINER ─── */
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 18px 14px 90px;
+        }
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 22px;
+            padding: 6px 2px;
+        }
+        .logo-text {
+            font-size: 19px;
+            font-weight: 700;
+            letter-spacing: -0.4px;
+            color: #f5f3ff;
+        }
+        .logo-badge {
+            background: #1a1030;
+            padding: 3px 11px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 500;
+            color: #a78bfa;
+            margin-left: 6px;
+            letter-spacing: 0.5px;
+            border: 1px solid #241a3d;
+        }
+        .header-icons {
+            display: flex;
+            gap: 18px;
+            color: var(--text-dim);
+        }
+        .header-icons svg {
+            cursor: pointer;
+            transition: color 0.25s;
+        }
+        .banner-box {
+            background: linear-gradient(145deg, #120c24 0%, #0a0618 50%, #0f0a20 100%);
+            border: 1px solid #22193a;
+            padding: 22px 20px;
+            border-radius: var(--radius-lg);
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 26px;
+            box-shadow: var(--shadow-card);
+        }
+        .banner-glow {
+            position: absolute;
+            width: 220px;
+            height: 220px;
+            background: radial-gradient(circle, rgba(124, 77, 255, 0.18) 0%, transparent 70%);
+            top: -110px;
+            right: -90px;
+            pointer-events: none;
+        }
+        .banner-glow-secondary {
+            position: absolute;
+            width: 140px;
+            height: 140px;
+            background: radial-gradient(circle, rgba(0, 230, 118, 0.08) 0%, transparent 70%);
+            bottom: -50px;
+            left: -40px;
+            pointer-events: none;
+        }
+        .banner-content {
+            position: relative;
+            z-index: 2;
+        }
+        .banner-content h1 {
+            font-size: 23px;
+            line-height: 1.35;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+        }
+        .banner-content h1 span {
+            background: linear-gradient(135deg, #c4b5fd, #7c4dff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .banner-content p {
+            margin-top: 7px;
+            font-size: 13px;
+            color: var(--text-dim);
+        }
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #d4ccf0;
+        }
+        .target-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 13px;
+            margin-bottom: 20px;
+        }
+        .target-card {
+            background: var(--bg-card-alt);
+            border: 1px solid #1f1735;
+            padding: 17px 15px;
+            border-radius: var(--radius-std);
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            position: relative;
+            box-shadow: 0 1px 12px rgba(0, 0, 0, 0.25);
+        }
+        .target-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
+        }
+        .target-card:active {
+            transform: scale(0.97);
+        }
+        .target-icon-wrap {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+            border: 2px solid;
+        }
+        .target-card h3 {
+            font-size: 17px;
+            font-weight: 700;
+            margin-bottom: 3px;
+        }
+        .target-card p {
+            font-size: 12px;
+            color: var(--text-dim);
+            line-height: 1.4;
+        }
+        .target-btn {
+            width: 100%;
+            margin-top: 12px;
+            padding: 9px 0;
+            border-radius: 8px;
+            border: 1px solid;
+            background: transparent;
+            font-weight: 600;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+        .target-btn:hover {
+            background: rgba(255, 255, 255, 0.04);
+        }
+        .t-green {
+            border-color: rgba(0, 230, 118, 0.2);
+            background: rgba(0, 230, 118, 0.02);
+        }
+        .t-green .target-icon-wrap {
+            border-color: var(--glow-green);
+            color: var(--glow-green);
+            box-shadow: 0 0 18px rgba(0, 230, 118, 0.1);
+        }
+        .t-green .target-btn {
+            border-color: rgba(0, 230, 118, 0.5);
+            color: var(--glow-green);
+        }
+        .t-blue {
+            border-color: rgba(62, 104, 255, 0.2);
+            background: rgba(62, 104, 255, 0.02);
+        }
+        .t-blue .target-icon-wrap {
+            border-color: #4d7cff;
+            color: #4d7cff;
+            box-shadow: 0 0 18px rgba(62, 104, 255, 0.1);
+        }
+        .t-blue .target-btn {
+            border-color: rgba(62, 104, 255, 0.5);
+            color: #4d7cff;
+        }
+        .t-yellow {
+            border-color: rgba(255, 193, 7, 0.2);
+            background: rgba(255, 193, 7, 0.02);
+        }
+        .t-yellow .target-icon-wrap {
+            border-color: var(--glow-yellow);
+            color: var(--glow-yellow);
+            box-shadow: 0 0 18px rgba(255, 193, 7, 0.1);
+        }
+        .t-yellow .target-btn {
+            border-color: rgba(255, 193, 7, 0.5);
+            color: var(--glow-yellow);
+        }
+        .t-purple {
+            border-color: rgba(124, 77, 255, 0.2);
+            background: rgba(124, 77, 255, 0.02);
+        }
+        .t-purple .target-icon-wrap {
+            border-color: var(--primary-purple);
+            color: var(--primary-purple);
+            box-shadow: 0 0 18px rgba(124, 77, 255, 0.1);
+        }
+        .t-purple .target-btn {
+            border-color: rgba(124, 77, 255, 0.5);
+            color: var(--primary-purple-light);
+        }
+        .custom-card {
+            background: var(--bg-card-alt);
+            border: 1px solid #1f1735;
+            border-radius: var(--radius-std);
+            padding: 18px 16px;
+            margin-top: 10px;
+            box-shadow: 0 1px 16px rgba(0, 0, 0, 0.3);
+        }
+        .custom-input-wrap {
+            position: relative;
+        }
+        .custom-input-wrap span {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-dim);
+            font-size: 14px;
+            font-weight: 600;
+            pointer-events: none;
+        }
+        .custom-input {
+            width: 100%;
+            background: #080514;
+            border: 1px solid #1f1735;
+            border-radius: 10px;
+            padding: 13px 12px 13px 30px;
+            color: #f5f3ff;
+            font-size: 14px;
+            outline: none;
+            transition: var(--transition-smooth);
+        }
+        .custom-input:focus {
+            border-color: var(--primary-purple);
+            box-shadow: 0 0 20px rgba(124, 77, 255, 0.08);
+        }
+        .custom-input::placeholder {
+            color: #4a3d65;
+        }
+        .btn-main {
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            border: none;
+            background: linear-gradient(135deg, #7c4dff 0%, #9d6dff 50%, #7c4dff 100%);
+            background-size: 200% 100%;
+            color: #fff;
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 14px;
+            transition: var(--transition-smooth);
+            letter-spacing: 0.4px;
+            box-shadow: 0 4px 20px rgba(124, 77, 255, 0.25);
+        }
+        .btn-main:hover {
+            box-shadow: 0 6px 28px rgba(124, 77, 255, 0.4);
+        }
+        .btn-main:active {
+            transform: scale(0.96);
+        }
+        .btn-resume {
+            background: linear-gradient(135deg, #00e676, #00c853);
+            box-shadow: 0 4px 20px rgba(0, 230, 118, 0.25);
+        }
+        .btn-resume:hover {
+            box-shadow: 0 6px 28px rgba(0, 230, 118, 0.45);
+        }
+        .info-sect {
+            margin-top: 26px;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .info-item {
+            background: #0b0818;
+            border: 1px solid #1a1235;
+            border-radius: 12px;
+            padding: 14px 13px;
+        }
+        .info-icon-wrap {
+            width: 34px;
+            height: 34px;
+            background: #140f28;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary-purple-light);
+            margin-bottom: 8px;
+        }
+        .info-item h4 {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 3px;
+        }
+        .info-item p {
+            font-size: 11px;
+            color: var(--text-dim);
+            line-height: 1.3;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            background: #0a0716;
+            border: 1px solid #1a1235;
+            border-radius: 12px;
+            margin-top: 14px;
+            padding: 13px 0;
+            text-align: center;
+        }
+        .stats-item {
+            border-right: 1px solid #1a1235;
+            padding: 0 4px;
+        }
+        .stats-item:last-child {
+            border-right: none;
+        }
+        .stats-item svg {
+            color: var(--primary-purple-light);
+            width: 18px;
+            height: 18px;
+            margin-bottom: 4px;
+        }
+        .stats-item h3 {
+            font-size: 15px;
+            font-weight: 800;
+        }
+        .stats-item p {
+            font-size: 9px;
+            color: var(--text-dim);
+            line-height: 1.3;
+        }
+
+        /* ─── RESUME BANNER ─── */
+        .resume-banner {
+            background: linear-gradient(145deg, #0f1a0f, #0a120a);
+            border: 1px solid rgba(0, 230, 118, 0.25);
+            border-radius: var(--radius-std);
+            padding: 16px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 18px;
+            box-shadow: 0 0 30px rgba(0, 230, 118, 0.05);
+            animation: breathe 2.5s ease-in-out infinite;
+        }
+        .resume-banner .left h4 {
+            font-size: 11px;
+            color: var(--glow-green);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 500;
+        }
+        .resume-banner .left h2 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-top: 2px;
+        }
+        .resume-banner .left p {
+            font-size: 11px;
+            color: var(--text-dim);
+            margin-top: 2px;
+        }
+        .resume-banner .btn-resume-small {
+            background: rgba(0, 230, 118, 0.12);
+            border: 1px solid var(--glow-green);
+            color: var(--glow-green);
+            padding: 9px 18px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .resume-banner .btn-resume-small:hover {
+            background: rgba(0, 230, 118, 0.2);
+            box-shadow: 0 0 20px rgba(0, 230, 118, 0.15);
+        }
+
+        /* ─── PAYMENT ─── */
+        .payment-container {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 20px 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 80vh;
+        }
+        .pay-box {
+            background: var(--bg-card-alt);
+            border: 1px solid #1f1735;
+            border-radius: var(--radius-xl);
+            padding: 32px 20px;
+            width: 100%;
+            text-align: center;
+            box-shadow: var(--shadow-card);
+            animation: fade-up 0.5s ease-out;
+        }
+        .pay-amount-box {
+            background: #080514;
+            border: 1px solid #1f1735;
+            border-radius: var(--radius-std);
+            padding: 22px 16px;
+            margin: 20px 0;
+            box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.3);
+        }
+        .pay-amount-box h4 {
+            font-size: 11px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 500;
+        }
+        .pay-amount-box h2 {
+            font-size: 36px;
+            color: var(--glow-yellow);
+            font-weight: 800;
+            letter-spacing: 1px;
+            margin-top: 4px;
+        }
+        .qr-code {
+            width: 170px;
+            height: 170px;
+            margin: 20px auto;
+            background: #fff;
+            padding: 10px;
+            border-radius: 14px;
+            display: block;
+            border: 2px solid #1f1735;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            object-fit: contain;
+        }
+        .pay-input {
+            width: 100%;
+            background: #080514;
+            border: 1px solid #1f1735;
+            border-radius: 12px;
+            padding: 15px;
+            color: #f5f3ff;
+            text-align: center;
+            font-size: 15px;
+            margin-top: 10px;
+            outline: none;
+            letter-spacing: 0.5px;
+            transition: var(--transition-smooth);
+        }
+        .pay-input:focus {
+            border-color: var(--primary-purple);
+            box-shadow: 0 0 20px rgba(124, 77, 255, 0.1);
+        }
+        .pay-input::placeholder {
+            color: #4a3d65;
+        }
+        .btn-pay {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #00c853, #00e676);
+            color: #000;
+            font-weight: 700;
+            font-size: 15px;
+            margin-top: 20px;
+            cursor: pointer;
+            letter-spacing: 0.5px;
+            transition: var(--transition-smooth);
+            box-shadow: 0 4px 22px rgba(0, 230, 118, 0.3);
+        }
+        .btn-pay:hover {
+            box-shadow: 0 6px 30px rgba(0, 230, 118, 0.5);
+        }
+        .btn-pay:active {
+            transform: scale(0.96);
+        }
+        .cust-svc {
+            margin-top: 22px;
+            width: 100%;
+            border: 1px solid #1f1735;
+            padding: 13px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--text-dim);
+            font-size: 13px;
+            text-decoration: none;
+            gap: 10px;
+            transition: var(--transition-smooth);
+        }
+        .cust-svc:hover {
+            border-color: var(--primary-purple);
+            color: #c4b5fd;
+        }
+
+        /* ─── PREDICTION ─── */
+        .pred-container {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 0 0 80px 0;
+        }
+        .pred-header {
+            display: flex;
+            justify-content: space-between;
+            padding: 18px 14px 10px;
+            align-items: center;
+            background: rgba(6, 4, 12, 0.92);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            border-bottom: 1px solid #1a1235;
+        }
+        .pred-header h2 {
+            background: linear-gradient(180deg, #f5f3ff 20%, #a78bfa 80%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 900;
+            font-size: 21px;
+            letter-spacing: 1.5px;
+        }
+        .pred-header span {
+            font-size: 10px;
+            color: var(--text-dim);
+            letter-spacing: 1px;
+            font-weight: 500;
+        }
+        .pred-main {
+            padding: 14px;
+        }
+        .range-banner {
+            background: linear-gradient(145deg, #120c24, #0a0618);
+            border: 1px solid #22193a;
+            border-radius: var(--radius-std);
+            padding: 16px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            box-shadow: var(--shadow-card);
+        }
+        .range-left h4 {
+            font-size: 10px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 500;
+        }
+        .range-left h2 {
+            font-size: 19px;
+            font-weight: 700;
+            margin-top: 3px;
+        }
+        .range-banner svg {
+            color: #a78bfa;
+            width: 34px;
+            height: 34px;
+        }
+        .balance-period {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .bal-box {
+            background: #0a0716;
+            border: 1px solid rgba(0, 230, 118, 0.3);
+            border-radius: var(--radius-std);
+            padding: 14px 15px;
+            box-shadow: 0 0 18px rgba(0, 230, 118, 0.04);
+        }
+        .bal-box h4 {
+            color: var(--text-dim);
+            font-size: 10px;
+            letter-spacing: 1px;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+        .bal-box h2 {
+            font-size: 21px;
+            color: var(--glow-green);
+            margin-top: 5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 700;
+        }
+        .period-box {
+            background: #0a0716;
+            border: 1px solid #1f1735;
+            border-radius: var(--radius-std);
+            padding: 14px 15px;
+        }
+        .period-box h4 {
+            color: var(--text-dim);
+            font-size: 10px;
+            letter-spacing: 1px;
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+        .period-box h4 span {
+            background: #ff1744;
+            color: #fff;
+            padding: 2px 9px;
+            border-radius: 4px;
+            font-size: 8px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            animation: pulse-glow 1.5s infinite;
+        }
+        .period-box p {
+            font-family: var(--font-mono);
+            font-size: 17px;
+            color: var(--glow-yellow);
+            margin-top: 6px;
+            letter-spacing: 1.5px;
+            font-weight: 600;
+        }
+        .period-box p .upcoming-badge {
+            font-size: 10px;
+            color: var(--glow-yellow);
+            background: rgba(255, 193, 7, 0.12);
+            padding: 2px 10px;
+            border-radius: 12px;
+            margin-left: 8px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+        .pred-box {
+            background: #0f0b1e;
+            border: 1px solid #22193a;
+            border-radius: var(--radius-std);
+            padding: 24px 16px;
+            text-align: center;
+            margin-bottom: 16px;
+            position: relative;
+            box-shadow: var(--shadow-card);
+        }
+        .pred-box h4 {
+            color: var(--text-dim);
+            font-size: 10px;
+            letter-spacing: 1.5px;
+            margin-bottom: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+        .loading-wrap {
+            position: relative;
+            height: 140px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+        .loader-ring {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 3px solid #1f1735;
+            border-top-color: #7c4dff;
+            animation: ring-rotate 1s linear infinite;
+        }
+        .loader-bar {
+            height: 4px;
+            width: 70%;
+            background: #1a1030;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .loader-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #7c4dff, #a78bfa);
+            width: 0%;
+            animation: loader-progress 5s ease-in-out forwards;
+            border-radius: 3px;
+        }
+        .pred-res {
+            font-size: 48px;
+            font-weight: 900;
+            margin: 6px 0;
+            letter-spacing: 4px;
+        }
+        .bet-display {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--glow-yellow);
+            margin: 4px 0 12px;
+        }
+        .levels-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .lvl-card {
+            background: #0a0716;
+            border: 1px solid #1f1735;
+            border-radius: var(--radius-std);
+            padding: 12px 8px;
+            text-align: center;
+            position: relative;
+            transition: var(--transition-smooth);
+        }
+        .lvl-card.active {
+            border-color: var(--glow-yellow);
+            box-shadow: 0 0 20px rgba(255, 193, 7, 0.12);
+            animation: border-pulse 2s infinite;
+        }
+        .lvl-badge {
+            position: absolute;
+            top: -9px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--primary-purple);
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            box-shadow: 0 2px 10px rgba(124, 77, 255, 0.4);
+        }
+        .lvl-card h5 {
+            font-size: 10px;
+            color: var(--text-dim);
+            margin-top: 5px;
+            font-weight: 500;
+        }
+        .lvl-card p {
+            font-size: 13px;
+            font-weight: 700;
+            margin-top: 2px;
+        }
+        .analysis-box {
+            background: #0a0716;
+            border: 1px solid #1f1735;
+            border-radius: var(--radius-std);
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 16px rgba(0, 0, 0, 0.3);
+        }
+        .analysis-top {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid #1a1235;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        .analysis-reason {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 12px 0;
+        }
+        .analysis-reason h5 {
+            color: var(--glow-green);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .analysis-reason p {
+            font-size: 12px;
+            color: var(--text-dim);
+            line-height: 1.4;
+        }
+        .confidence-line {
+            background: #1a1030;
+            height: 6px;
+            border-radius: 3px;
+            margin: 10px 0;
+            width: 100%;
+            overflow: hidden;
+        }
+        .conf-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00e676, #69f0ae);
+            width: 83%;
+            border-radius: 3px;
+            transition: width 0.6s ease-out;
+        }
+        .analysis-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 6px;
+            margin-top: 12px;
+        }
+        .stat-pill {
+            background: #0d0920;
+            border: 1px solid #1a1235;
+            border-radius: 8px;
+            padding: 9px 4px;
+            text-align: center;
+        }
+        .stat-pill svg {
+            width: 16px;
+            height: 16px;
+            color: #4d7cff;
+            margin-bottom: 3px;
+        }
+        .stat-pill h6 {
+            font-size: 9px;
+            color: var(--text-dim);
+        }
+        .stat-pill p {
+            font-size: 11px;
+            font-weight: 600;
+            margin-top: 2px;
+        }
+        .history-panel {
+            background: #0a0716;
+            border: 1px solid #1f1735;
+            border-radius: var(--radius-std);
+            padding: 16px;
+            box-shadow: 0 1px 16px rgba(0, 0, 0, 0.3);
+        }
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            color: var(--text-dim);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.8px;
+        }
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .history-list::-webkit-scrollbar {
+            width: 3px;
+        }
+        .history-list::-webkit-scrollbar-track {
+            background: #0a0716;
+        }
+        .history-list::-webkit-scrollbar-thumb {
+            background: #1f1735;
+            border-radius: 3px;
+        }
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #130d22;
+            font-size: 13px;
+            animation: fade-up 0.35s ease-out;
+        }
+        .history-item:last-child {
+            border-bottom: none;
+        }
+        .status-pill {
+            padding: 3px 11px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .st-win {
+            background: rgba(0, 230, 118, 0.12);
+            color: var(--glow-green);
+        }
+        .st-loss {
+            background: rgba(255, 23, 68, 0.12);
+            color: var(--glow-red);
+        }
+        .st-pend {
+            background: rgba(255, 193, 7, 0.12);
+            color: var(--glow-yellow);
+        }
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(10, 7, 22, 0.94);
+            border-top: 1px solid #1f1735;
+            padding: 8px 14px 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 50;
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+        }
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #5c4f7a;
+            font-size: 10px;
+            gap: 4px;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            flex: 1;
+        }
+        .nav-item.active {
+            color: #f5f3ff;
+        }
+        .nav-item svg {
+            width: 20px;
+            height: 20px;
+        }
+        .nav-ai {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            top: -22px;
+            background: #100c20;
+            border: 2px solid #1f1735;
+            width: 58px;
+            height: 58px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 24px rgba(124, 77, 255, 0.1);
+            cursor: pointer;
+        }
+        .nav-ai svg {
+            width: 26px;
+            height: 26px;
+            color: #a78bfa;
+        }
+        .nav-ai.active {
+            border-color: #7c4dff;
+            box-shadow: 0 0 32px rgba(124, 77, 255, 0.2);
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(4, 2, 10, 0.82);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fade-in 0.3s ease-out;
+        }
+        @keyframes fade-in {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        .modal-box {
+            background: #100c20;
+            border: 1px solid #22193a;
+            border-radius: var(--radius-xl);
+            padding: 30px 24px;
+            max-width: 340px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+            animation: scale-in 0.35s ease-out;
+        }
+        .modal-icon {
+            width: 62px;
+            height: 62px;
+            border-radius: 50%;
+            margin: 0 auto 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-icon.success {
+            background: rgba(0, 230, 118, 0.08);
+            border: 2px solid var(--glow-green);
+            box-shadow: 0 0 30px rgba(0, 230, 118, 0.15);
+        }
+        .modal-icon.fail {
+            background: rgba(255, 23, 68, 0.08);
+            border: 2px solid var(--glow-red);
+            box-shadow: 0 0 30px rgba(255, 23, 68, 0.15);
+        }
+        .modal-icon svg {
+            width: 30px;
+            height: 30px;
+        }
+        .modal-box h2 {
+            margin-bottom: 8px;
+            font-size: 19px;
+        }
+        .modal-box p {
+            color: var(--text-dim);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .btn-modal {
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            border: none;
+            background: linear-gradient(135deg, #7c4dff, #a78bfa);
+            color: #fff;
+            font-weight: 700;
+            margin-top: 20px;
+            cursor: pointer;
+            letter-spacing: 0.5px;
+            transition: var(--transition-smooth);
+            box-shadow: 0 4px 20px rgba(124, 77, 255, 0.3);
+        }
+        .btn-modal:hover {
+            box-shadow: 0 6px 28px rgba(124, 77, 255, 0.5);
+        }
+        .btn-modal:active {
+            transform: scale(0.96);
+        }
+        @media (max-width: 460px) {
+            .info-grid,
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .stats-item {
+                border-right: none;
+                border-bottom: 1px solid #1a1235;
+                padding: 8px 0;
+            }
+            .stats-item:last-child {
+                border-bottom: none;
+            }
+            .levels-grid {
+                gap: 6px;
+            }
+            .lvl-card {
+                padding: 8px 5px;
+            }
+            .analysis-stats {
+                grid-template-columns: 1fr 1fr;
+            }
+            .target-grid {
+                gap: 10px;
+            }
+            .target-card {
+                padding: 14px 11px;
+            }
+            .pred-res {
+                font-size: 38px;
+            }
+            .resume-banner {
+                flex-direction: column;
+                text-align: center;
+                gap: 12px;
+            }
+            .resume-banner .btn-resume-small {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+        .api-status {
+            font-size: 10px;
+            color: var(--text-dim);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 4px;
+            justify-content: center;
+        }
+        .api-status .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .dot.green {
+            background: var(--glow-green);
+            box-shadow: 0 0 8px rgba(0, 230, 118, 0.4);
+        }
+        .dot.red {
+            background: var(--glow-red);
+            box-shadow: 0 0 8px rgba(255, 23, 68, 0.4);
+        }
+        .dot.yellow {
+            background: var(--glow-yellow);
+            box-shadow: 0 0 8px rgba(255, 193, 7, 0.4);
+        }
+        .fetch-retry {
+            background: rgba(255, 193, 7, 0.06);
+            border: 1px solid rgba(255, 193, 7, 0.15);
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 11px;
+            color: var(--text-dim);
+            text-align: center;
+            margin-top: 8px;
+        }
+        .fetch-retry strong {
+            color: var(--glow-yellow);
+            cursor: pointer;
+        }
+        .fetch-retry strong:hover {
+            text-decoration: underline;
+        }
+        .last-fetch-time {
+            font-size: 9px;
+            color: var(--text-muted);
+            text-align: right;
+            margin-top: 4px;
+            padding-right: 4px;
+        }
+        .history-item .result-badge {
+            font-weight: 600;
+            font-size: 11px;
+        }
+        .history-item .result-badge.win {
+            color: var(--glow-green);
+        }
+        .history-item .result-badge.loss {
+            color: var(--glow-red);
+        }
+        .history-item .result-badge.pending {
+            color: var(--glow-yellow);
+        }
+        .pred-period-info {
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+        .stats-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-top: 12px;
+        }
+        .stats-row .stat-card {
+            background: #0a0716;
+            border: 1px solid #1f1735;
+            border-radius: var(--radius-std);
+            padding: 12px 8px;
+            text-align: center;
+        }
+        .stats-row .stat-card span {
+            font-size: 9px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .stats-row .stat-card strong {
+            font-size: 22px;
+            font-weight: 800;
+            display: block;
+            margin-top: 2px;
+        }
+        .stats-row .stat-card.win strong {
+            color: var(--glow-green);
+        }
+        .stats-row .stat-card.loss strong {
+            color: var(--glow-red);
+        }
+        .stats-row .stat-card.acc strong {
+            color: var(--glow-yellow);
+        }
+        .stats-row .stat-card.bet strong {
+            color: var(--primary-purple-light);
+        }
+        .ring-indicators {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin: 12px 0 8px;
+        }
+        .ring-indicators .ring {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 4px solid #1f1735;
+            transition: all 0.5s ease;
+            background: rgba(0, 0, 0, 0.2);
+        }
+        .ring-indicators .ring.win {
+            border-color: var(--glow-green);
+            box-shadow: 0 0 30px rgba(0, 230, 118, 0.3);
+            background: rgba(0, 230, 118, 0.05);
+        }
+        .ring-indicators .ring.loss {
+            border-color: var(--glow-red);
+            box-shadow: 0 0 30px rgba(255, 23, 68, 0.3);
+            background: rgba(255, 23, 68, 0.05);
+        }
+        .ring-indicators .ring.pending {
+            border-color: var(--glow-yellow);
+            box-shadow: 0 0 30px rgba(255, 193, 7, 0.15);
+            background: rgba(255, 193, 7, 0.05);
+        }
+        .ring-indicators .ring.idle {
+            border-color: #1f1735;
+            box-shadow: none;
+            background: rgba(0, 0, 0, 0.2);
+        }
+        .toast-msg {
+            position: fixed;
+            bottom: 90px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1a1030;
+            border: 1px solid #2a1f45;
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-size: 13px;
+            color: #f5f3ff;
+            z-index: 999;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+            animation: fade-up 0.3s ease-out;
+            max-width: 90%;
+            text-align: center;
+            pointer-events: none;
+        }
+        .toast-msg.win-toast {
+            border-color: var(--glow-green);
+            color: var(--glow-green);
+        }
+        .toast-msg.loss-toast {
+            border-color: var(--glow-red);
+            color: var(--glow-red);
+        }
+        .toast-msg.info-toast {
+            border-color: var(--glow-yellow);
+            color: var(--glow-yellow);
+        }
+        .pred-res.small {
+            color: var(--glow-yellow);
+            text-shadow: 0 0 24px rgba(255, 193, 7, 0.35);
+        }
+        .pred-res.big {
+            color: var(--glow-blue);
+            text-shadow: 0 0 24px rgba(77, 124, 255, 0.35);
+        }
+
+        .spin-indicator {
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-top: 6px;
+            letter-spacing: 0.5px;
+        }
+        .spin-indicator .spin-num {
+            font-weight: 700;
+            color: var(--primary-purple-light);
+            font-size: 14px;
+        }
+        .done-text {
+            color: var(--glow-green);
+            font-weight: 700;
+            font-size: 16px;
+            animation: pulse-glow 1s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="watermark">made by sky</div>
+
+    <!-- SVG icons -->
+    <svg style="display:none;">
+        <symbol id="icon-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></symbol>
+        <symbol id="icon-bell" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></symbol>
+        <symbol id="icon-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></symbol>
+        <symbol id="icon-wallet" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></symbol>
+        <symbol id="icon-crown" viewBox="0 0 24 24"><path d="M8 21h8M12 21v-4M7 9l-3 5h16l-3-5-3 4-3-4z"/></symbol>
+        <symbol id="icon-home" viewBox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></symbol>
+        <symbol id="icon-history" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+        <symbol id="icon-brain" viewBox="0 0 24 24"><path d="M12 4a4 4 0 0 1 4 4c0 1.5-.5 2.5-1.5 3.5 1 1 1.5 2 1.5 3.5a4 4 0 0 1-4 4c-1.5 0-2.5-.5-3.5-1.5-1 1-2 1.5-3.5 1.5a4 4 0 0 1-4-4c0-1.5.5-2.5 1.5-3.5-1-1-1.5-2-1.5-3.5a4 4 0 0 1 4-4c1.5 0 2.5.5 3.5 1.5 1-1 2-1.5 3.5-1.5z"/></symbol>
+        <symbol id="icon-stats" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></symbol>
+        <symbol id="icon-user" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+        <symbol id="icon-rocket" viewBox="0 0 24 24"><path d="M4.5 16.5c-1.5 1.26-2 3-2 3s1.74-.5 3-2c.74-1.12 1.5-2.5 1.5-2.5s-1.38.76-2.5 1.5z"/><path d="M12 2s-7 3-7 10c0 5 4.5 8.5 7 10 2.5-1.5 7-5 7-10 0-7-7-10-7-10z"/><path d="M12 11a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/></symbol>
+        <symbol id="icon-house" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></symbol>
+        <symbol id="icon-trophy" viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M7 4H3v2a3 3 0 0 0 4 3v-5zM17 4h4v2a3 3 0 0 1-4 3v-5z"/></symbol>
+        <symbol id="icon-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
+        <symbol id="icon-check-circle" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></symbol>
+        <symbol id="icon-x-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></symbol>
+        <symbol id="icon-arrow-up" viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></symbol>
+        <symbol id="icon-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></symbol>
+        <symbol id="icon-activity" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></symbol>
+        <symbol id="icon-target-scope" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6" fill="currentColor" opacity="0.3"/></symbol>
+        <symbol id="icon-cube" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></symbol>
+        <symbol id="icon-arrow-right" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></symbol>
+        <symbol id="icon-refresh" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></symbol>
+        <symbol id="icon-chevron-right" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></symbol>
+    </svg>
+
+    <!-- PAGE 1: TARGET SERVER -->
+    <div id="page-target" class="container animate-fade">
+        <div class="header-bar">
+            <div class="logo-text">Target Server <span class="logo-badge">v3.0</span></div>
+            <div class="header-icons">
+                <svg class="icon-svg"><use href="#icon-moon"/></svg>
+                <svg class="icon-svg"><use href="#icon-bell"/></svg>
+            </div>
+        </div>
+        <div class="banner-box">
+            <div class="banner-glow"></div>
+            <div class="banner-glow-secondary"></div>
+            <div class="banner-content">
+                <h1>Set Your Target<br><span>Achieve Your Future</span></h1>
+                <p>Choose a target or create your custom target and get started.</p>
+            </div>
+        </div>
+
+        <!-- RESUME BANNER – shown only if user has an active approved session -->
+        <div id="resumeBanner" class="resume-banner hidden">
+            <div class="left">
+                <h4>▶ Active Session</h4>
+                <h2 id="resumeTargetLabel">100 → 300</h2>
+                <p>Balance: ₹<span id="resumeBalance">0</span> · Level <span id="resumeLevel">1</span></p>
+            </div>
+            <button class="btn-resume-small" onclick="resumeGame()">
+                <svg class="icon-svg" style="width:16px;height:16px;stroke:var(--glow-green);"><use href="#icon-chevron-right"/></svg>
+                Resume
+            </button>
+        </div>
+
+        <div class="section-title">
+            <svg class="icon-svg" style="background:#140f28; padding:5px; border-radius:7px; color:#8b7eaa;"><use href="#icon-target-scope"/></svg>
+            Quick Targets
+            <span style="margin-left:auto; font-size:10px; font-weight:400; color:var(--text-dim);">Select a target range</span>
+        </div>
+        <div class="target-grid">
+            <div class="target-card t-green" onclick="selectTarget(100, 300, '100 To 300')">
+                <div class="target-icon-wrap"><svg class="icon-svg"><use href="#icon-target"/></svg></div>
+                <h3>100 To 300</h3><p>Start: 100<br>Target: 300</p>
+                <button class="target-btn"><svg class="icon-svg" style="width:14px;height:14px;"><use href="#icon-check-circle"/></svg> Confirm</button>
+            </div>
+            <div class="target-card t-blue" onclick="selectTarget(300, 2000, '300 To 2K')">
+                <div class="target-icon-wrap"><svg class="icon-svg"><use href="#icon-target"/></svg></div>
+                <h3>300 To 2K</h3><p>Start: 300<br>Target: 2,000</p>
+                <button class="target-btn"><svg class="icon-svg" style="width:14px;height:14px;"><use href="#icon-check-circle"/></svg> Confirm</button>
+            </div>
+            <div class="target-card t-yellow" onclick="selectTarget(500, 5000, '500 To 5K')">
+                <div class="target-icon-wrap"><svg class="icon-svg"><use href="#icon-target"/></svg></div>
+                <h3>500 To 5K</h3><p>Start: 500<br>Target: 5,000</p>
+                <button class="target-btn"><svg class="icon-svg" style="width:14px;height:14px;"><use href="#icon-check-circle"/></svg> Confirm</button>
+            </div>
+            <div class="target-card t-purple" onclick="selectTarget(1000, 10000, '1K To 10K')">
+                <div class="target-icon-wrap"><svg class="icon-svg"><use href="#icon-target"/></svg></div>
+                <h3>1K To 10K</h3><p>Start: 1,000<br>Target: 10,000</p>
+                <button class="target-btn"><svg class="icon-svg" style="width:14px;height:14px;"><use href="#icon-check-circle"/></svg> Confirm</button>
+            </div>
+        </div>
+        <div class="custom-card">
+            <div class="section-title" style="margin-bottom:10px;">
+                <svg class="icon-svg" style="background:#140f28; padding:5px; border-radius:7px; color:#8b7eaa;"><use href="#icon-target-scope"/></svg>
+                Custom Target Made
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                <div class="custom-input-wrap"><span>₹</span><input type="number" id="customStart" class="custom-input" placeholder="Enter start balance"></div>
+                <div class="custom-input-wrap"><span>₹</span><input type="number" id="customEnd" class="custom-input" placeholder="Enter target balance"></div>
+            </div>
+            <button class="btn-main" onclick="selectCustomTarget()">Confirm Custom Target <svg class="icon-svg" style="stroke:#fff; width:18px;"><use href="#icon-check-circle"/></svg></button>
+        </div>
+        <div class="info-sect">
+            <div class="section-title">Why Use Target Server?</div>
+            <div class="info-grid">
+                <div class="info-item"><div class="info-icon-wrap"><svg class="icon-svg"><use href="#icon-rocket"/></svg></div><h4>Set Clear Goals</h4><p>Define your start and target balance</p></div>
+                <div class="info-item"><div class="info-icon-wrap"><svg class="icon-svg"><use href="#icon-house"/></svg></div><h4>Track Progress</h4><p>Monitor your journey in real-time</p></div>
+                <div class="info-item"><div class="info-icon-wrap"><svg class="icon-svg"><use href="#icon-trophy"/></svg></div><h4>Stay Motivated</h4><p>Achieve milestones and unlock rewards</p></div>
+                <div class="info-item"><div class="info-icon-wrap"><svg class="icon-svg"><use href="#icon-shield"/></svg></div><h4>Secure & Private</h4><p>Your data is safe with us</p></div>
+            </div>
+            <div class="stats-grid">
+                <div class="stats-item"><svg class="icon-svg"><use href="#icon-target-scope"/></svg><h3>12</h3><p>Total Targets<br>Created</p></div>
+                <div class="stats-item"><svg class="icon-svg" style="color:var(--glow-green);"><use href="#icon-check-circle"/></svg><h3>7</h3><p>Targets<br>Completed</p></div>
+                <div class="stats-item"><svg class="icon-svg" style="color:#4d7cff;"><use href="#icon-arrow-up"/></svg><h3 style="color:#4d7cff;">58%</h3><p>Success Rate</p></div>
+                <div class="stats-item"><svg class="icon-svg" style="color:var(--glow-green);"><use href="#icon-cube"/></svg><h3>5K</h3><p>Best Achievement</p></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAGE 2: PAYMENT -->
+    <div id="page-payment" class="payment-container hidden">
+        <div class="pay-box">
+            <div style="background:#140f28; width:52px; height:52px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto; border:2px solid #22193a;"><svg class="icon-svg" style="stroke:#a78bfa; width:24px;"><use href="#icon-shield"/></svg></div>
+            <h2 style="margin-top:12px;">Payment Required</h2>
+            <p style="color:var(--text-dim); font-size:13px;">25% of profit needed to start your journey</p>
+            <div class="pay-amount-box"><h4>Amount To Pay</h4><h2>₹<span id="paymentAmountDisplay">0</span></h2></div>
+            <img src="qr.png" class="qr-code" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxODAiIGhlaWdodD0iMTgwIj48cmVjdCB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgZmlsbD0iI2ZmZmZmZiIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LXNpemU9IjE2IiBmaWxsPSIjMDAwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj5RIFIgQ29kZTwvdGV4dD48L3N2Zz4=';">
+            <input type="text" id="utrInput" class="pay-input" placeholder="Enter UTR Number">
+            <button class="btn-pay" onclick="submitPayment()">Submit For Approval</button>
+            <p id="paymentStatus" style="margin-top:10px; font-size:12px; color:var(--text-dim);"></p>
+            <a href="https://t.me/SHRK_BAD_BOY_BRO" target="_blank" class="cust-svc">
+                <svg class="icon-svg" style="width:16px; stroke:var(--primary-purple-light);"><use href="#icon-arrow-right"/></svg>
+                <span>Customer Service</span><span style="color:var(--primary-purple-light); font-weight:600;">@SkybhaionTop</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- PAGE 3: PREDICTOR DASHBOARD -->
+    <div id="page-prediction" class="pred-container hidden">
+        <div class="pred-header">
+            <div style="display:flex; align-items:center; gap:10px;"><svg class="icon-svg" style="stroke:#a78bfa; width:20px;"><use href="#icon-crown"/></svg><h2>PREDICTOR</h2></div>
+            <span>SMART . FAST . ACCURATE</span>
+            <svg class="icon-svg" style="stroke:var(--text-dim); cursor:pointer;" onclick="manualRefresh()"><use href="#icon-refresh"/></svg>
+        </div>
+        <div class="pred-main">
+            <div class="range-banner"><div class="range-left"><h4>Target Range</h4><h2 id="predTargetRange">100 To 300</h2></div><svg class="icon-svg" style="width:40px; height:40px;"><use href="#icon-target"/></svg></div>
+            <div class="balance-period">
+                <div class="bal-box animate-breathe"><h4>Current Balance</h4><h2>₹<span id="predBalance">100</span> <svg class="icon-svg" style="width:22px; stroke:var(--glow-green);"><use href="#icon-wallet"/></svg></h2></div>
+                <div class="period-box"><h4>Live Next Period <span>LIVE</span></h4><p id="livePeriod">⌛ Loading… <span class="upcoming-badge">next</span></p></div>
+            </div>
+            <div class="pred-box">
+                <h4>Auto-Mode Prediction</h4>
+                <div id="loadingScreen" class="loading-wrap"><div class="loader-ring"></div><div class="loader-bar"><div class="loader-fill"></div></div><p style="color:var(--text-dim); font-size:13px; font-weight:500;" id="loadingText">Analysing patterns…</p></div>
+                <div id="resultScreen" class="hidden" style="padding-top:16px;">
+                    <div class="pred-res text-glow-green" id="predColor">GREEN</div>
+                    <h4 style="color:var(--text-dim); font-size:11px; text-transform:uppercase; letter-spacing:1.5px;">Prediction Result</h4>
+                    <p class="bet-display">Bet Amount: ₹<span id="predBetAmount">0</span></p>
+                    <p class="pred-period-info" id="predPeriodInfo">Period: —</p>
+                    <p class="spin-indicator">🔮 <span id="spinDisplay">●</span></p>
+                    <div class="levels-grid">
+                        <div class="lvl-card" id="lvl1"><div class="lvl-badge">1</div><h5>LEVEL 1</h5><p style="color:var(--text-dim);">15%</p><p id="lvl1Amount" style="font-weight:700; color:#f5f3ff;">₹0</p></div>
+                        <div class="lvl-card" id="lvl2"><div class="lvl-badge">2</div><h5>LEVEL 2</h5><p style="color:var(--text-dim);">30%</p><p id="lvl2Amount" style="font-weight:700; color:#f5f3ff;">₹0</p></div>
+                        <div class="lvl-card" id="lvl3"><div class="lvl-badge">3</div><h5>LEVEL 3</h5><p style="color:var(--text-dim);">55%</p><p id="lvl3Amount" style="font-weight:700; color:#f5f3ff;">₹0</p></div>
+                    </div>
+                    <div class="ring-indicators" id="ringIndicators">
+                        <div class="ring idle" id="ring1"></div>
+                        <div class="ring idle" id="ring2"></div>
+                        <div class="ring idle" id="ring3"></div>
+                        <div class="ring idle" id="ring4"></div>
+                    </div>
+                </div>
+                <div class="api-status" id="apiStatus"><span class="dot yellow"></span> Connecting to API…</div>
+                <div class="last-fetch-time" id="lastFetchTime"></div>
+            </div>
+            <div class="analysis-box animate-fade">
+                <div class="analysis-top"><div style="display:flex; align-items:center; gap:8px;"><svg class="icon-svg" style="stroke:var(--primary-purple-light); width:18px;"><use href="#icon-target-scope"/></svg><h5 style="color:var(--text-dim); font-size:11px;">AUTO-MODE ANALYSIS</h5></div><h5 style="color:var(--glow-green); font-size:10px; text-transform:uppercase;">Auto-Mode Selected</h5></div>
+                <div class="analysis-reason"><div style="width:34px; height:34px; border-radius:50%; border:1px solid var(--glow-green); display:flex; align-items:center; justify-content:center; box-shadow:0 0 16px rgba(0,230,118,0.08);"><svg class="icon-svg" style="stroke:var(--glow-green); width:18px;"><use href="#icon-target-scope"/></svg></div><div><h5>Analysis</h5><p id="analysisReason">Waiting for data…</p></div><svg class="icon-svg" style="margin-left:auto; stroke:var(--glow-green); width:26px; height:26px;"><use href="#icon-cube"/></svg></div>
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-top:10px;"><h5 style="color:var(--text-dim); font-size:10px;">CONFIDENCE LEVEL</h5><span style="color:var(--glow-green); font-size:14px; font-weight:700;" id="confText">83% <span style="font-size:10px; font-weight:400; color:var(--text-dim);">HIGH</span></span></div>
+                <div class="confidence-line"><div class="conf-fill" id="confFill" style="width:83%;"></div></div>
+                <div class="analysis-stats">
+                    <div class="stat-pill"><svg class="icon-svg"><use href="#icon-arrow-up"/></svg><p id="statStreak">2</p><h6>STREAK</h6></div>
+                    <div class="stat-pill"><svg class="icon-svg"><use href="#icon-grid"/></svg><p id="statPattern">WEAK</p><h6>PATTERN</h6></div>
+                    <div class="stat-pill"><svg class="icon-svg"><use href="#icon-activity"/></svg><p id="statVolatility">MEDIUM</p><h6>VOLATILITY</h6></div>
+                    <div class="stat-pill"><svg class="icon-svg"><use href="#icon-target-scope"/></svg><p id="statAccuracy">78%</p><h6>ACCURACY</h6></div>
+                </div>
+                <div class="stats-row">
+                    <div class="stat-card win"><span>Wins</span><strong id="statWins">0</strong></div>
+                    <div class="stat-card loss"><span>Losses</span><strong id="statLosses">0</strong></div>
+                    <div class="stat-card bet"><span>Bets</span><strong id="statTotalBets">0</strong></div>
+                </div>
+                <div id="fetchRetryBanner" class="fetch-retry hidden">⚠️ API fetch failed. Using cached data. <strong onclick="manualRefresh()">Retry now</strong></div>
+            </div>
+            <div class="history-panel">
+                <div class="history-header"><span>PREDICTION HISTORY</span><span style="background:#140f28; padding:3px 11px; border-radius:12px; cursor:pointer; font-size:10px;" onclick="clearHistory()">CLEAR</span></div>
+                <div id="historyList" class="history-list"><div class="history-item" style="color:var(--text-dim); justify-content:center; font-size:12px; border-bottom:none; padding:10px 0;">Waiting for predictions…</div></div>
+            </div>
+        </div>
+        <div class="bottom-nav">
+            <div class="nav-item active"><svg class="icon-svg"><use href="#icon-home"/></svg>Home</div>
+            <div class="nav-item"><svg class="icon-svg"><use href="#icon-history"/></svg>History</div>
+            <div class="nav-ai active"><svg class="icon-svg"><use href="#icon-brain"/></svg></div>
+            <div class="nav-item"><svg class="icon-svg"><use href="#icon-stats"/></svg>Stats</div>
+            <div class="nav-item"><svg class="icon-svg"><use href="#icon-user"/></svg>Profile</div>
+        </div>
+    </div>
+
+    <div id="modal-container"></div>
+
+    <script>
+        /* ─── FIREBASE SETUP ─── */
+        const firebaseConfig = {
+            apiKey: "AIzaSyBHLb-g-WUe8AuiVRIOVolh1MTXF1u7dOc",
+            authDomain: "colour-games-dfe2d.firebaseapp.com",
+            databaseURL: "https://colour-games-dfe2d-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "colour-games-dfe2d",
+            storageBucket: "colour-games-dfe2d.firebasestorage.app",
+            messagingSenderId: "92918980466",
+            appId: "1:92918980466:web:137e6bc678c0fa76ff07eb",
+            measurementId: "G-D7C15NMDJD"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        /* ─── USER STATE ─── */
+        let uid = localStorage.getItem('uid');
+        if (!uid) {
+            uid = 'user_' + Date.now() + Math.random().toString(36).substring(2, 8);
+            localStorage.setItem('uid', uid);
+        }
+
+        let userData = null;
+        let targetData = { start: 0, end: 0, label: '' };
+        let paymentAmount = 0;
+        let currentLevel = 1;
+        let balance = 0;
+        let isGameRunning = false;
+        let apiInterval = null;
+        let apiDataCache = [];
+        let fetchFailCount = 0;
+        let isGenerating = false;
+        let pendingPeriodId = null;
+        let lastPredictionType = null;
+        let lastPredictionPeriod = null;
+        let passCount = 0;
+        let failCount = 0;
+        let betCount = 0;
+        let wins = 0;
+        let losses = 0;
+        let totalBets = 0;
+        let historyData = [];
+        let processedPeriods = new Set();
+        let pendingResolveMap = new Map();
+
+        // Track whether we've already checked for an active session on load
+        let sessionCheckDone = false;
+
+        /* ─── SPIN SYSTEM (HIDDEN) ───
+           This is the core prediction engine.
+           Maps 0-9 to prediction types.
+        */
+        function hiddenSpin() {
+            const num = Math.floor(Math.random() * 10);
+            let prediction;
+            switch (num) {
+                case 0:
+                    prediction = 'RED';
+                    break;
+                case 1:
+                    prediction = 'GREEN';
+                    break;
+                case 2:
+                    prediction = 'SMALL';
+                    break;
+                case 3:
+                    prediction = 'GREEN';
+                    break;
+                case 4:
+                    prediction = 'SMALL';
+                    break;
+                case 5:
+                    prediction = 'BIG';
+                    break;
+                case 6:
+                    prediction = 'RED';
+                    break;
+                case 7:
+                    prediction = 'BIG';
+                    break;
+                case 8:
+                    prediction = 'RED';
+                    break;
+                case 9:
+                    prediction = 'GREEN';
+                    break;
+                default:
+                    prediction = 'GREEN';
+            }
+            return { number: num, prediction: prediction };
+        }
+
+        /* ─── UI HELPERS ─── */
+        function showPage(id) {
+            document.querySelectorAll('#page-target, #page-payment, #page-prediction').forEach(el => el.classList.add(
+            'hidden'));
+            const targetPage = document.getElementById(id);
+            targetPage.classList.remove('hidden');
+            targetPage.classList.add('animate-fade');
+            setTimeout(() => targetPage.classList.remove('animate-fade'), 500);
+        }
+
+        function showModal(title, msg, iconType, btnText, callback) {
+            document.getElementById('modal-container').innerHTML = `
+                <div class="modal-overlay">
+                    <div class="modal-box">
+                        <div class="modal-icon ${iconType}">
+                            <svg class="icon-svg"><use href="#${iconType === 'success' ? 'icon-check-circle' : 'icon-x-circle'}"/></svg>
+                        </div>
+                        <h2>${title}</h2>
+                        <p>${msg}</p>
+                        <button class="btn-modal" id="modalCloseBtn">${btnText}</button>
+                    </div>
+                </div>`;
+            document.getElementById('modalCloseBtn').onclick = () => { closeModal(); if (callback) callback(); };
+        }
+
+        function closeModal() { document.getElementById('modal-container').innerHTML = ''; }
+
+        function showToast(msg, type) {
+            const existing = document.querySelector('.toast-msg');
+            if (existing) existing.remove();
+            const div = document.createElement('div');
+            div.className = 'toast-msg' + (type ? ' ' + type + '-toast' : '');
+            div.textContent = msg;
+            document.body.appendChild(div);
+            setTimeout(() => { if (div.parentNode) div.remove(); }, 3000);
+        }
+
+        function updateBalanceUI(bal) {
+            const floored = Math.floor(bal);
+            document.getElementById('predBalance').innerText = floored;
+            updateBetUI(floored);
+        }
+
+        function updateBetUI(bal) {
+            const l1 = Math.floor(bal * 0.15);
+            const l2 = Math.floor(bal * 0.30);
+            const l3 = Math.floor(bal * 0.55);
+            document.getElementById('lvl1Amount').innerText = '₹' + l1;
+            document.getElementById('lvl2Amount').innerText = '₹' + l2;
+            document.getElementById('lvl3Amount').innerText = '₹' + l3;
+            document.querySelectorAll('.lvl-card').forEach(el => el.classList.remove('active'));
+            if (currentLevel === 1) document.getElementById('lvl1').classList.add('active');
+            else if (currentLevel === 2) document.getElementById('lvl2').classList.add('active');
+            else if (currentLevel === 3) document.getElementById('lvl3').classList.add('active');
+        }
+
+        function setApiStatus(status, msg) {
+            const el = document.getElementById('apiStatus');
+            const dot = el.querySelector('.dot');
+            dot.className = 'dot';
+            if (status === 'connected') {
+                dot.classList.add('green');
+                el.innerHTML = `<span class="dot green"></span> ${msg || 'API connected'}`;
+            } else if (status === 'error') {
+                dot.classList.add('red');
+                el.innerHTML = `<span class="dot red"></span> ${msg || 'API error — using cache'}`;
+            } else {
+                dot.classList.add('yellow');
+                el.innerHTML = `<span class="dot yellow"></span> ${msg || 'Connecting…'}`;
+            }
+        }
+
+        function showRetryBanner(show) {
+            document.getElementById('fetchRetryBanner').classList.toggle('hidden', !show);
+        }
+
+        function manualRefresh() {
+            if (!isGameRunning) return;
+            showRetryBanner(false);
+            setApiStatus('pending', 'Fetching fresh data…');
+            fetchAPI(true);
+        }
+
+        function clearHistory() {
+            if (confirm('Clear all prediction history?')) {
+                db.ref('users/' + uid + '/history').remove().then(() => {
+                    document.getElementById('historyList').innerHTML =
+                        '<div class="history-item" style="color:var(--text-dim); justify-content:center; font-size:12px; border-bottom:none; padding:10px 0;">History cleared.</div>';
+                    processedPeriods.clear();
+                    historyData = [];
+                    wins = 0;
+                    losses = 0;
+                    totalBets = 0;
+                    passCount = 0;
+                    failCount = 0;
+                    betCount = 0;
+                    pendingResolveMap.clear();
+                    updateStatsUI();
+                });
+            }
+        }
+
+        function updateStatsUI() {
+            document.getElementById('statWins').innerText = wins;
+            document.getElementById('statLosses').innerText = losses;
+            document.getElementById('statTotalBets').innerText = totalBets;
+            const acc = totalBets > 0 ? Math.round((wins / totalBets) * 100) : 0;
+            document.getElementById('statAccuracy').innerText = acc + '%';
+        }
+
+        function flashRing(index, type) {
+            const ring = document.getElementById('ring' + (index + 1));
+            if (!ring) return;
+            ring.className = 'ring';
+            setTimeout(() => {
+                ring.classList.add(type);
+            }, 50);
+            setTimeout(() => {
+                ring.className = 'ring idle';
+            }, 1500);
+        }
+
+        /* ─── TARGET SELECTION ─── */
+        function selectTarget(start, end, label) {
+            // If user already has an active approved session, resume directly
+            if (userData && userData.isApproved === true && userData.status === 'active') {
+                // Use existing data, ignore the clicked target
+                targetData = { start: userData.targetStart, end: userData.targetEnd, label: userData.targetLabel };
+                balance = userData.balance || userData.targetStart;
+                currentLevel = userData.currentLevel || 1;
+                loadPredictionPage();
+                return;
+            }
+
+            targetData = { start, end, label };
+            const profit = end - start;
+            paymentAmount = Math.floor(profit * 0.25);
+            const discount = localStorage.getItem('discount_' + uid + '_' + label) === 'true';
+            if (discount) { paymentAmount = Math.floor(paymentAmount / 2);
+                localStorage.removeItem('discount_' + uid + '_' + label); }
+            document.getElementById('paymentAmountDisplay').innerText = paymentAmount;
+            showPage('page-payment');
+        }
+
+        function selectCustomTarget() {
+            const s = parseInt(document.getElementById('customStart').value);
+            const e = parseInt(document.getElementById('customEnd').value);
+            if (!s || !e || s >= e) return alert('Invalid Target Range');
+
+            // If user already has an active approved session, resume directly
+            if (userData && userData.isApproved === true && userData.status === 'active') {
+                targetData = { start: userData.targetStart, end: userData.targetEnd, label: userData.targetLabel };
+                balance = userData.balance || userData.targetStart;
+                currentLevel = userData.currentLevel || 1;
+                loadPredictionPage();
+                return;
+            }
+
+            selectTarget(s, e, s + ' To ' + e);
+        }
+
+        /* ─── RESUME GAME ─── */
+        function resumeGame() {
+            if (userData && userData.isApproved === true && userData.status === 'active') {
+                targetData = { start: userData.targetStart, end: userData.targetEnd, label: userData.targetLabel };
+                balance = userData.balance || userData.targetStart;
+                currentLevel = userData.currentLevel || 1;
+                loadPredictionPage();
+            } else {
+                // If for some reason the session is invalid, hide the banner
+                document.getElementById('resumeBanner').classList.add('hidden');
+            }
+        }
+
+        /* ─── PAYMENT ─── */
+        function submitPayment() {
+            const utr = document.getElementById('utrInput').value.trim();
+            if (!utr) return;
+            const statusEl = document.getElementById('paymentStatus');
+            statusEl.innerText = 'Submitting for Admin Approval…';
+            statusEl.style.color = 'var(--glow-yellow)';
+            db.ref('users/' + uid).update({
+                targetStart: targetData.start,
+                targetEnd: targetData.end,
+                targetLabel: targetData.label,
+                paymentAmount: paymentAmount,
+                paymentUTR: utr,
+                status: 'pending_approval',
+                balance: targetData.start,
+                currentLevel: 1,
+                isApproved: false
+            }).then(() => {
+                statusEl.innerText = 'Waiting for Admin Approval…';
+                statusEl.style.color = 'var(--glow-green)';
+                listenForApproval();
+            }).catch(() => { statusEl.innerText = 'Error submitting. Try again.';
+                statusEl.style.color = '#ff5252'; });
+        }
+
+        function listenForApproval() {
+            const userRef = db.ref('users/' + uid);
+            userRef.on('value', (snap) => {
+                const data = snap.val();
+                if (!data) return;
+                userData = data;
+                if (data.isApproved === true && data.status === 'active') {
+                    userRef.off();
+                    balance = data.balance || data.targetStart;
+                    currentLevel = data.currentLevel || 1;
+                    targetData = { start: data.targetStart, end: data.targetEnd, label: data.targetLabel };
+                    loadPredictionPage();
+                } else if (data.status === 'rejected') { alert("Payment rejected by admin.");
+                    userRef.off();
+                    showPage('page-target'); }
+            });
+        }
+
+        /* ─── PREDICTION ENGINE ─── */
+        function loadPredictionPage() {
+            showPage('page-prediction');
+            document.getElementById('predTargetRange').innerText = targetData.label;
+            updateBalanceUI(balance);
+            startPredictionEngine();
+        }
+
+        /* ─── FETCH HELPERS ─── */
+        function fetchWithTimeout(url, timeout = 6000) {
+            return new Promise((resolve, reject) => {
+                const controller = new AbortController();
+                const timer = setTimeout(() => controller.abort(), timeout);
+                fetch(url, { signal: controller.signal, headers: { 'Accept': 'application/json' } })
+                    .then(res => { clearTimeout(timer); resolve(res); })
+                    .catch(err => { clearTimeout(timer); reject(err); });
+            });
+        }
+
+        function extractDataArray(json) {
+            if (!json) return null;
+            let candidates = [
+                json.data,
+                json.list,
+                json.content,
+                json.records,
+                json.result,
+                json.history,
+                json.items,
+                json
+            ];
+            for (let cand of candidates) {
+                if (Array.isArray(cand) && cand.length > 0) {
+                    if (cand[0].issueNumber !== undefined || cand[0].issue !== undefined ||
+                        cand[0].openCode !== undefined || cand[0].code !== undefined ||
+                        cand[0].number !== undefined) {
+                        return cand;
+                    }
+                }
+                if (cand && typeof cand === 'object') {
+                    for (let key of ['list', 'records', 'items', 'content', 'data']) {
+                        if (Array.isArray(cand[key]) && cand[key].length > 0) {
+                            return cand[key];
+                        }
+                    }
+                }
+            }
+            if (Array.isArray(json) && json.length > 0) return json;
+            return null;
+        }
+
+        function getIssueNumber(item) {
+            return item.issueNumber || item.issue || item.period || item.id || item.issueNo || '';
+        }
+
+        function getOpenCode(item) {
+            let code = item.openCode !== undefined ? item.openCode : item.code;
+            if (code === undefined || code === null) {
+                code = item.number;
+            }
+            if (code === undefined || code === null) return null;
+            return parseInt(code);
+        }
+
+        function sortPeriods(periods) {
+            return [...periods].sort((a, b) => {
+                const aNum = parseInt(getIssueNumber(a) || 0);
+                const bNum = parseInt(getIssueNumber(b) || 0);
+                return bNum - aNum;
+            });
+        }
+
+        function generateMockData() {
+            const mock = [];
+            const now = Date.now();
+            for (let i = 1; i <= 25; i++) {
+                const issueNum = String(1000000 + i).padStart(7, '0');
+                const code = Math.floor(Math.random() * 10);
+                mock.push({
+                    issueNumber: issueNum,
+                    openCode: code,
+                    openTime: new Date(now - i * 60000).toISOString()
+                });
+            }
+            return mock;
+        }
+
+        /* ─── CALCULATE NEXT PERIOD ─── */
+        function calculateNextPeriod() {
+            const now = new Date();
+            const seconds = now.getUTCSeconds();
+            const duration = 60;
+            const remainingSeconds = duration - seconds;
+
+            let periodNum = null;
+
+            if (apiDataCache && apiDataCache.length > 0) {
+                try {
+                    const sorted = sortPeriods(apiDataCache);
+                    const latestId = getIssueNumber(sorted[0]);
+                    if (latestId) {
+                        periodNum = (BigInt(latestId) + 1n).toString();
+                    }
+                } catch (e) {
+                    periodNum = null;
+                }
+            }
+
+            if (!periodNum) {
+                const year = now.getUTCFullYear();
+                const month = String(now.getUTCMonth() + 1).padStart(2, '0');
+                const day = String(now.getUTCDate()).padStart(2, '0');
+                const hours = now.getUTCHours();
+                const minutes = now.getUTCMinutes();
+                const totalSecondsToday = (hours * 3600) + (minutes * 60) + seconds;
+                const periodCount = Math.floor(totalSecondsToday / duration) + 1;
+                periodNum = `${year}${month}${day}${String(periodCount).padStart(4, '0')}`;
+            }
+
+            return {
+                period: periodNum,
+                remaining: remainingSeconds,
+                minutes: Math.floor(remainingSeconds / 60),
+                seconds: remainingSeconds % 60
+            };
+        }
+
+        /* ─── FAKE ANALYSIS ─── */
+        function getFakeAnalysisMessage(step) {
+            const messages = [
+                "I am choosing safest Prediction…",
+                "I am choosing safest Prediction…",
+                "I am choosing safest Prediction…",
+                "I am choosing safest Prediction…",
+                "Done ✓"
+            ];
+            return messages[step] || messages[0];
+        }
+
+        /* ─── UPDATE UI WITH PREDICTION ─── */
+        function displayPrediction(periodId, prediction, betAmount, spinNumber) {
+            document.getElementById('loadingScreen').classList.add('hidden');
+            document.getElementById('resultScreen').classList.remove('hidden');
+
+            const predEl = document.getElementById('predColor');
+            predEl.innerText = prediction;
+
+            predEl.className = 'pred-res';
+            if (prediction === 'GREEN') {
+                predEl.classList.add('text-glow-green');
+            } else if (prediction === 'RED') {
+                predEl.classList.add('text-glow-red');
+            } else if (prediction === 'SMALL') {
+                predEl.classList.add('text-glow-yellow');
+                predEl.classList.add('small');
+            } else if (prediction === 'BIG') {
+                predEl.classList.add('text-glow-blue');
+                predEl.classList.add('big');
+            } else {
+                predEl.classList.add('text-glow-green');
+            }
+
+            document.getElementById('predBetAmount').innerText = betAmount;
+            document.getElementById('predPeriodInfo').innerText = 'Period: ' + periodId;
+            const spinDisplay = document.getElementById('spinDisplay');
+            spinDisplay.innerText = '● ' + spinNumber + ' ●';
+            updateBetUI(balance);
+            flashRing(0, 'pending');
+            flashRing(1, 'pending');
+            flashRing(2, 'pending');
+            flashRing(3, 'pending');
+        }
+
+        /* ─── GENERATE PREDICTION USING HIDDEN SPIN ─── */
+        function generatePredictionForPeriod(periodId, allPeriods) {
+            if (isGenerating) return;
+            isGenerating = true;
+
+            document.getElementById('loadingScreen').classList.remove('hidden');
+            document.getElementById('resultScreen').classList.add('hidden');
+
+            const loadingText = document.getElementById('loadingText');
+            const spinResult = hiddenSpin();
+            const spinNum = spinResult.number;
+            const predictionColor = spinResult.prediction;
+
+            let betAmount = 0;
+            if (currentLevel === 1) betAmount = Math.floor(balance * 0.15);
+            else if (currentLevel === 2) betAmount = Math.floor(balance * 0.30);
+            else if (currentLevel === 3) betAmount = Math.floor(balance * 0.55);
+
+            let step = 0;
+            const totalSteps = 5;
+
+            const interval = setInterval(() => {
+                step++;
+                if (step < totalSteps) {
+                    loadingText.innerText = getFakeAnalysisMessage(step - 1);
+                    const fill = document.querySelector('.loader-fill');
+                    if (fill) {
+                        fill.style.width = (step / totalSteps * 100) + '%';
+                    }
+                } else {
+                    clearInterval(interval);
+                    loadingText.innerText = 'Done ✓';
+                    loadingText.style.color = 'var(--glow-green)';
+                    loadingText.style.fontWeight = '700';
+
+                    setTimeout(() => {
+                        const historyRef = db.ref('users/' + uid + '/history/' + periodId);
+                        historyRef.set({
+                            prediction: predictionColor,
+                            betAmount: betAmount,
+                            timestamp: Date.now(),
+                            level: currentLevel,
+                            resultProcessed: false,
+                            confidence: 78 + Math.floor(Math.random() * 15),
+                            period: periodId,
+                            spinNumber: spinNum,
+                            predictionType: predictionColor
+                        }).then(() => {
+                            displayPrediction(periodId, predictionColor, betAmount, spinNum);
+                            updateHistoryUI(periodId, predictionColor, 'PENDING');
+                            pendingResolveMap.set(periodId, { prediction: predictionColor,
+                                betAmount, level: currentLevel, spinNum });
+                            isGenerating = false;
+                            loadingText.style.color = 'var(--text-dim)';
+                            loadingText.style.fontWeight = '500';
+                            loadingText.innerText = 'Analysing patterns…';
+                            setTimeout(() => { fetchAPI(true); }, 500);
+                        }).catch(() => {
+                            displayPrediction(periodId, predictionColor, betAmount, spinNum);
+                            updateHistoryUI(periodId, predictionColor, 'PENDING');
+                            pendingResolveMap.set(periodId, { prediction: predictionColor,
+                                betAmount, level: currentLevel, spinNum });
+                            isGenerating = false;
+                            loadingText.style.color = 'var(--text-dim)';
+                            loadingText.style.fontWeight = '500';
+                            loadingText.innerText = 'Analysing patterns…';
+                        });
+                    }, 300);
+                }
+            }, 1000);
+
+            const fakeReasons = [
+                "Strong reversal pattern detected in recent history.",
+                "Momentum shift observed; switching to optimal side.",
+                "Statistical edge identified based on frequency analysis.",
+                "Consecutive streak suggests reversion to mean.",
+                "Volatility analysis indicates a clear directional bias."
+            ];
+            const fakeReason = fakeReasons[Math.floor(Math.random() * fakeReasons.length)];
+            document.getElementById('analysisReason').innerText = fakeReason;
+            const conf = 78 + Math.floor(Math.random() * 15);
+            document.getElementById('confFill').style.width = conf + '%';
+            document.getElementById('confText').innerHTML = conf +
+                '% <span style="font-size:10px;font-weight:400;color:var(--text-dim);">' + (conf >= 75 ? 'HIGH' :
+                    'MEDIUM') + '</span>';
+
+            document.getElementById('statStreak').innerText = Math.floor(Math.random() * 5) + 1;
+            const patterns = ['STRONG', 'WEAK', 'MODERATE', 'BULLISH', 'BEARISH'];
+            document.getElementById('statPattern').innerText = patterns[Math.floor(Math.random() * patterns.length)];
+            const vols = ['LOW', 'MEDIUM', 'HIGH'];
+            document.getElementById('statVolatility').innerText = vols[Math.floor(Math.random() * vols.length)];
+        }
+
+        /* ─── UPDATE HISTORY UI ─── */
+        function updateHistoryUI(periodId, prediction, status, actualColor) {
+            const list = document.getElementById('historyList');
+            if (list.children.length === 1 && list.children[0].innerText.includes('Waiting')) list.innerHTML = '';
+            if (list.children.length === 1 && list.children[0].innerText.includes('History cleared')) list.innerHTML = '';
+
+            let existing = null;
+            for (let child of list.children) {
+                if (child.dataset && child.dataset.period === periodId) {
+                    existing = child;
+                    break;
+                }
+            }
+
+            let pillClass = 'st-pend';
+            let resultText = 'PENDING';
+            if (status === 'WIN') { pillClass = 'st-win';
+                resultText = 'WIN'; } else if (status === 'LOSS') { pillClass = 'st-loss';
+                resultText = 'LOSS'; }
+
+            const isGreen = prediction === 'GREEN';
+            const predColor = isGreen ? 'var(--glow-green)' : 'var(--glow-red)';
+            let predDisplay = prediction;
+            if (prediction === 'SMALL') predDisplay = 'SMALL';
+            if (prediction === 'BIG') predDisplay = 'BIG';
+
+            const item = document.createElement('div');
+            item.className = 'history-item';
+            item.dataset.period = periodId;
+            item.innerHTML = `
+                <span style="font-family:var(--font-mono); font-size:11px; color:var(--text-dim);">${periodId}</span>
+                <span style="color:${predColor}; font-weight:600;">${predDisplay}</span>
+                ${actualColor ? `<span style="font-size:10px; color:var(--text-muted);">→ ${actualColor}</span>` : ''}
+                <span class="status-pill ${pillClass}">${resultText}</span>`;
+
+            if (existing) {
+                list.replaceChild(item, existing);
+            } else {
+                list.prepend(item);
+            }
+
+            while (list.children.length > 20) list.removeChild(list.lastChild);
+        }
+
+        /* ─── PROCESS PERIODS ─── */
+        function processPeriods(periods) {
+            if (!periods || periods.length === 0) return;
+            const sorted = sortPeriods(periods);
+
+            const apiResultMap = new Map();
+            for (let p of sorted) {
+                const id = getIssueNumber(p);
+                const code = getOpenCode(p);
+                if (id && code !== null && !isNaN(code)) {
+                    apiResultMap.set(String(id), code);
+                }
+            }
+
+            const historyRef = db.ref('users/' + uid + '/history');
+            historyRef.once('value').then(snap => {
+                const allHistory = snap.val();
+                if (!allHistory) return;
+                let anyUpdate = false;
+
+                for (let [periodId, hist] of Object.entries(allHistory)) {
+                    if (hist.resultProcessed === true) continue;
+                    if (!hist.prediction) continue;
+
+                    const actualCode = apiResultMap.get(periodId);
+                    if (actualCode === undefined || actualCode === null) continue;
+
+                    let actualType;
+                    switch (actualCode) {
+                        case 0:
+                            actualType = 'RED';
+                            break;
+                        case 1:
+                            actualType = 'GREEN';
+                            break;
+                        case 2:
+                            actualType = 'SMALL';
+                            break;
+                        case 3:
+                            actualType = 'GREEN';
+                            break;
+                        case 4:
+                            actualType = 'SMALL';
+                            break;
+                        case 5:
+                            actualType = 'BIG';
+                            break;
+                        case 6:
+                            actualType = 'RED';
+                            break;
+                        case 7:
+                            actualType = 'BIG';
+                            break;
+                        case 8:
+                            actualType = 'RED';
+                            break;
+                        case 9:
+                            actualType = 'GREEN';
+                            break;
+                        default:
+                            actualType = 'UNKNOWN';
+                    }
+
+                    if (actualType === 'UNKNOWN') continue;
+
+                    const isWin = hist.prediction === actualType;
+                    const betAmount = hist.betAmount || 0;
+
+                    const updateData = {
+                        actual: actualType,
+                        actualCode: actualCode,
+                        result: isWin ? 'WIN' : 'LOSS',
+                        resultProcessed: true,
+                        resolvedAt: Date.now()
+                    };
+
+                    db.ref('users/' + uid + '/history/' + periodId).update(updateData).then(() => {
+                        if (isWin) {
+                            wins++;
+                            passCount++;
+                            balance = Math.floor(balance + betAmount);
+                            currentLevel = 1;
+                            db.ref('users/' + uid).update({ balance: balance, currentLevel: 1 });
+                            updateBalanceUI(balance);
+                            flashRing(0, 'win');
+                            flashRing(2, 'win');
+                            showToast('🎉 WIN! ' + periodId + ' → ' + actualType + ' (+₹' + betAmount +
+                                ')', 'win');
+                        } else {
+                            losses++;
+                            failCount++;
+                            if (currentLevel === 1) currentLevel = 2;
+                            else if (currentLevel === 2) currentLevel = 3;
+                            else if (currentLevel === 3) {
+                                currentLevel = 0;
+                                handleGameOver();
+                                return;
+                            }
+                            db.ref('users/' + uid).update({ currentLevel: currentLevel });
+                            updateBalanceUI(balance);
+                            flashRing(1, 'loss');
+                            flashRing(3, 'loss');
+                            showToast('❌ LOSS! ' + periodId + ' → ' + actualType + ' (₹' + betAmount + ' lost)',
+                                'loss');
+                        }
+                        totalBets++;
+                        betCount++;
+                        updateStatsUI();
+                        updateHistoryUI(periodId, hist.prediction, isWin ? 'WIN' : 'LOSS', actualType);
+                        checkTargetComplete();
+                        anyUpdate = true;
+                    }).catch(err => {
+                        console.warn('Failed to update history for', periodId, err);
+                    });
+                }
+
+                if (anyUpdate) {
+                    for (let key of pendingResolveMap.keys()) {
+                        if (apiResultMap.has(key)) {
+                            pendingResolveMap.delete(key);
+                        }
+                    }
+                }
+            }).catch(err => {
+                console.warn('Failed to read history:', err);
+            });
+
+            const nextPeriod = calculateNextPeriod();
+            const nextNum = nextPeriod.period;
+            document.getElementById('livePeriod').innerHTML = nextNum +
+                ' <span class="upcoming-badge">next</span>';
+            pendingPeriodId = nextNum;
+
+            const predRef = db.ref('users/' + uid + '/history/' + nextNum);
+            predRef.once('value').then(snap => {
+                const hist = snap.val();
+                if (hist && hist.prediction && hist.resultProcessed !== true) {
+                    const spinNum = hist.spinNumber !== undefined ? hist.spinNumber : '?';
+                    displayPrediction(nextNum, hist.prediction, hist.betAmount || 0, spinNum);
+                    if (!hist.resultProcessed) {
+                        updateHistoryUI(nextNum, hist.prediction, 'PENDING');
+                    }
+                    if (apiResultMap.has(nextNum)) {
+                        processPeriods(apiDataCache);
+                    }
+                } else if (!hist || !hist.prediction) {
+                    if (!isGenerating) {
+                        generatePredictionForPeriod(nextNum, sorted);
+                    }
+                }
+            });
+        }
+
+        /* ─── UPDATE LIVE PERIOD ─── */
+        function updateLivePeriod() {
+            const nextPeriod = calculateNextPeriod();
+            document.getElementById('livePeriod').innerHTML = nextPeriod.period +
+                ' <span class="upcoming-badge">next</span>';
+            pendingPeriodId = nextPeriod.period;
+        }
+
+        /* ─── CHECK TARGET COMPLETE ─── */
+        function checkTargetComplete() {
+            if (balance >= targetData.end) {
+                stopGame();
+                db.ref('users/' + uid).update({ status: 'completed' });
+                showModal("Target Achieved", "Congratulations! Your balance has reached the target.", "success",
+                    "Start Again", () => { showPage('page-target');
+                        window.location.reload(); });
+            }
+        }
+
+        /* ─── HANDLE GAME OVER ─── */
+        function handleGameOver() {
+            stopGame();
+            db.ref('users/' + uid).update({ status: 'failed', currentLevel: 0 });
+            balance = 0;
+            updateBalanceUI(balance);
+            localStorage.setItem('discount_' + uid + '_' + targetData.label, 'true');
+            showModal("Target Not Reached", "Next target attempt comes with 50% discount on payment.", "fail",
+                "Try Again", () => { showPage('page-target');
+                    window.location.reload(); });
+        }
+
+        /* ─── FETCH API ─── */
+        async function fetchAPI(force = false) {
+            if (!force && apiDataCache.length > 0 && fetchFailCount < 3) {
+                processPeriods(apiDataCache);
+                updateLivePeriod();
+                return;
+            }
+
+            let data = null;
+            let success = false;
+
+            const API_URLS = [
+                'https://draw.ar-lottery01.com/WinGo/WinGo_1M/GetHistoryIssuePage.json',
+                'https://draw.ar-lottery01.com/WinGo/WinGo_30S/GetHistoryIssuePage.json'
+            ];
+            const CORS_PROXIES = [
+                'https://api.allorigins.win/raw?url=',
+                'https://corsproxy.io/?',
+                'https://api.codetabs.com/v1/proxy?quest=',
+                'https://thingproxy.freeboard.io/fetch/'
+            ];
+
+            for (let apiUrl of API_URLS) {
+                if (success) break;
+                try {
+                    const res = await fetchWithTimeout(apiUrl, 5000);
+                    if (res.ok) {
+                        const json = await res.json();
+                        const extracted = extractDataArray(json);
+                        if (extracted && extracted.length > 0) {
+                            data = extracted;
+                            success = true;
+                            setApiStatus('connected', 'API connected');
+                            break;
+                        }
+                    }
+                } catch (_) {}
+
+                if (!success) {
+                    for (let proxy of CORS_PROXIES) {
+                        try {
+                            const proxyUrl = proxy + encodeURIComponent(apiUrl);
+                            const res = await fetchWithTimeout(proxyUrl, 6000);
+                            if (res.ok) {
+                                const json = await res.json();
+                                const extracted = extractDataArray(json);
+                                if (extracted && extracted.length > 0) {
+                                    data = extracted;
+                                    success = true;
+                                    setApiStatus('connected', 'API via proxy');
+                                    break;
+                                }
+                            }
+                        } catch (_) {}
+                    }
+                }
+            }
+
+            if (success && data) {
+                apiDataCache = data;
+                fetchFailCount = 0;
+                showRetryBanner(false);
+                processPeriods(data);
+                updateLivePeriod();
+                document.getElementById('lastFetchTime').innerText = 'Last fetch: ' + new Date().toLocaleTimeString();
+            } else {
+                fetchFailCount++;
+                setApiStatus('error', 'API unavailable — using cache');
+                if (apiDataCache.length > 0) {
+                    processPeriods(apiDataCache);
+                    updateLivePeriod();
+                    showRetryBanner(true);
+                } else {
+                    const mock = generateMockData();
+                    apiDataCache = mock;
+                    processPeriods(mock);
+                    updateLivePeriod();
+                    showRetryBanner(true);
+                }
+            }
+        }
+
+        /* ─── START / STOP ENGINE ─── */
+        function stopGame() {
+            if (apiInterval) clearInterval(apiInterval);
+            isGameRunning = false;
+            apiInterval = null;
+        }
+
+        function startPredictionEngine() {
+            if (isGameRunning) return;
+            isGameRunning = true;
+            fetchAPI();
+            apiInterval = setInterval(() => {
+                if (!isGameRunning) return;
+                checkTargetComplete();
+                const nextPeriod = calculateNextPeriod();
+                document.getElementById('livePeriod').innerHTML = nextPeriod.period +
+                    ' <span class="upcoming-badge">next</span>';
+                fetchAPI();
+            }, 2000);
+        }
+
+        window.addEventListener('beforeunload', () => { stopGame(); });
+
+        /* ─── CHECK ACTIVE SESSION & SHOW RESUME BANNER ─── */
+        function checkActiveSession() {
+            if (sessionCheckDone) return;
+            sessionCheckDone = true;
+
+            const userRef = db.ref('users/' + uid);
+            userRef.once('value').then(snap => {
+                const data = snap.val();
+                if (data && data.isApproved === true && data.status === 'active') {
+                    userData = data;
+                    // Show resume banner on target page
+                    const banner = document.getElementById('resumeBanner');
+                    banner.classList.remove('hidden');
+                    document.getElementById('resumeTargetLabel').innerText = data.targetLabel || '100 → 300';
+                    document.getElementById('resumeBalance').innerText = data.balance || data.targetStart || 0;
+                    document.getElementById('resumeLevel').innerText = data.currentLevel || 1;
+                } else {
+                    // No active session – hide banner
+                    document.getElementById('resumeBanner').classList.add('hidden');
+                }
+            }).catch(() => {
+                document.getElementById('resumeBanner').classList.add('hidden');
+            });
+        }
+
+        /* ─── INIT ───
+            ALWAYS show the target page on load.
+            Check for active session in the background and show Resume banner if applicable.
+            NO auto-redirect to prediction page.
+        ─── */
+        (function init() {
+            // Always start on target page
+            showPage('page-target');
+
+            // Check for active session (for Resume banner)
+            checkActiveSession();
+
+            console.log('🚀 Target Server · Predictor v3.1 (Fixed: always starts on Target page)');
+            console.log('👤 User ID:', uid);
+            console.log('📌 Auto-redirect disabled — user always sees Target page first.');
+            console.log('🔒 Hidden spin system: 0→RED, 1→GREEN, 2→SMALL, 3→GREEN, 4→SMALL, 5→BIG, 6→RED, 7→BIG, 8→RED, 9→GREEN');
+        })();
+    </script>
+</body>
+</html>
